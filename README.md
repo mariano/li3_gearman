@@ -193,10 +193,10 @@ class TestHelloController extends \lithium\action\Controller {
 ```
 
 Ok we are now ready to start the daemon. For the purpose of testing (Gearman
-0.26 has currently some issues when running in non blocking mode on x86_64
-architectures) I'll run this in blocking mode. Since we also want some output,
-we'll ask the daemon to be verbose. Standing in your lithium core directory,
-run:
+0.26 has currently [some issues] [gearman-bug-800177] when running in non 
+]locking mode on x86_64 architectures) I'll run this in blocking mode. Since we
+also want some output, we'll ask the daemon to be verbose. Standing in your 
+lithium core directory, run:
 
 ```bash
 $ li3 gearmand start --verbose --blocking
@@ -254,3 +254,4 @@ I am app\tasks\Hello::say
 [gearman]: http://gearman.org
 [license]: http://www.opensource.org/licenses/bsd-license.php
 [gearman-doc-dobackground]: http://docs.php.net/manual/en/gearmanclient.dobackground.php
+[gearman-bug-800177]: https://bugs.launchpad.net/gearmand/+bug/800177
