@@ -194,7 +194,7 @@ class TestHelloController extends \lithium\action\Controller {
 
 Ok we are now ready to start the daemon. For the purpose of testing (Gearman
 0.26 has currently [some issues] [gearman-bug-800177] when running in non 
-]locking mode on x86_64 architectures) I'll run this in blocking mode. Since we
+blocking mode on x86_64 architectures) I'll run this in blocking mode. Since we
 also want some output, we'll ask the daemon to be verbose. Standing in your 
 lithium core directory, run:
 
