@@ -133,6 +133,12 @@ the default `Job` adapter, Available options are:
     * `priority`: what priority to give the job. Can be any of `low`, `normal`,
     or `high`. Defaults to `normal`.
 
+When jobs are triggered, one of the available workers (spawned by 
+li3\_gearman's `gearmand` daemon) will handle and execute it from within the
+console. This means that **any resource** available as part of lithium's 
+dispatch cycle is immediately available to the job. So you can use your models, 
+plugins, everything!
+
 # Example #
 
 Before starting with this example, make sure you have installed li3\_gearman
