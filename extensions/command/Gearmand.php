@@ -19,6 +19,13 @@ use li3_gearman\Gearman;
  */
 class Gearmand extends \lithium\console\Command {
     /**
+     * Enable to interact with Gearman in blocking mode. Default: disabled
+     *
+     * @var boolean
+     */
+    public $blocking = false;
+
+    /**
      * Enable to start daemon in a new process. Default: disabled
      *
      * @var boolean
@@ -239,16 +246,14 @@ class Gearmand extends \lithium\console\Command {
 
     /**
      * Worker
-     *
-     * @param boolean $nonBlocking Set true to work in nonblocking mode
      */
-    protected function worker($nonBlocking = false) {
+    protected function worker() {
         $this->log('Starting worker');
 
         $this->log('Creating Gearman worker');
 
         $worker = new GearmanWorker();
-        if ($nonBlocking) {
+        if (!$this->blocking) {
             $worker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
         }
         $worker->addServer();
@@ -256,7 +261,7 @@ class Gearmand extends \lithium\console\Command {
         $this->log('Registering function ' . get_called_class() . '::run');
         $worker->addFunction(get_called_class() . '::run', array($this, '_work'));
 
-        if ($nonBlocking) {
+        if (!$this->blocking) {
             while ($this->_process['run'] && (
                 $worker->work() ||
                 $worker->returnCode() == GEARMAN_IO_WAIT ||
