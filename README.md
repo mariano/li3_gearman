@@ -136,8 +136,8 @@ the default `Job` adapter, Available options are:
 # Example #
 
 Before starting with this example, make sure you have installed li3\_gearman
-as clarified in the section *Installation*, and add a default configuration
-as exemplified at the beginning of the section *Usage*.
+as clarified in the section *Installation*, and that you have added a default 
+configuration as exemplified at the beginning of the section *Usage*.
 
 Let us start by creating a task called `Hello`. Create a folder named `tasks`
 and place it in your application's `app` folder. Inside that folder, create
@@ -221,7 +221,7 @@ li3_gearman[6335]: (Worker) Registering function li3_gearman\extensions\command\
 
 Now open up a browser, and access the controller we just created. If your
 application lives in `localhost`, then browse to 
-`http://localhost/test\_hello`. You should see the following output on the
+`http://localhost/test_hello`. You should see the following output on the
 browser:
 
 ```text
@@ -231,10 +231,8 @@ string 'Hello Mariano' (length=13)
 
 The first value shown there corresponds to the first job trigger, which
 ran in background mode. This means that the given value is actually a job
-handle.
-
-The second value corresponds to the job that was run in synchronous mode, so
-this is actually a value returned by the job itself!
+handle. The second value corresponds to the job that was run in synchronous 
+mode, so this is actually a value returned by the job itself!
 
 If you switch to the console, you should see the following output as a result
 of the controller action we just ran:
