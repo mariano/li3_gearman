@@ -106,8 +106,8 @@ as a result of resucitation with the option `--limit`.
 
 ## Triggering jobs ##
 
-Jobs can be triggered using the `Gearman::run()` method. This method takes up
-to four arguments:
+Jobs can be triggered using the `Gearman::run()` method. This method takes the
+following arguments:
 
 * `configName`: The configuration name to use (see *Usage* section above)
 * `action`: What action to execute. If using the default `Job` adapter that
@@ -122,7 +122,7 @@ method of the given class is assumed. Examples:
 * `args`: Arguments to pass to the action. First element in the array will
 be the first argument. The second element will be the second argument, and so
 on.
-* `options`: Options that affects how the adapter triggers a job. If using
+* `options`: Options that affect how the adapter triggers a job. If using
 the default `Job` adapter, Available options are:
 
     * `background`: Wether to trigger the task in background. If set to `false`,
