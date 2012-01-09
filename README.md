@@ -167,8 +167,8 @@ class Hello {
 ```
 
 Now, let us add the code to trigger some tasks, both in background and
-synchronous mode. Create a file named `TestHello.php` and place it in your
-`app/controllers` folder with the following contents:
+synchronous mode. Create a file named `TestHelloController.php` and place it in
+your `app/controllers` folder with the following contents:
 
 ```php
 <?php
