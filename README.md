@@ -117,7 +117,7 @@ namespaces), and a method name. If no method name is provided, the `run()`
 method of the given class is assumed. Examples:
 
     * `app\tasks\Email::send`
-    * `app\tasks\Caching
+    * `app\tasks\Caching`
 
 * `args`: Arguments to pass to the action. First element in the array will
 be the first argument. The second element will be the second argument, and so
