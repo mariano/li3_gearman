@@ -94,12 +94,7 @@ class Job extends \lithium\core\Object {
                 $action = $options['background'] ? 'doHighBackground' : 'doHigh';
             break;
         }
-        echo '<hr />';
-        echo 'RUN!';
-        var_dump(
-            static::$_classes['worker'] . '::run',
-            compact('task', 'args')
-        );
+
         $configName = $options['configName'];
         return $this->client->{$action}(
             static::$_classes['worker'] . '::run',
@@ -120,7 +115,6 @@ class Job extends \lithium\core\Object {
             throw new RuntimeException("Invalid task {$task}");
         }
 
-        echo 'HANDLING JOB!!!';
         return call_user_func_array($task, $args);
     }
 }
