@@ -35,7 +35,7 @@ class Gearman extends \lithium\core\Adaptable {
      * @param array $options Extra options (used by adapter)
      * @return mixed Returned value by adapter's run() method
      */
-    public static function run($configName, $action, array $args, array $options = array()) {
+    public static function run($configName, $action, array $args = array(), array $options = array()) {
         $config = static::getConfig($configName);
         $filters = $config['filters'];
         $params = compact('action', 'args', 'configName');
