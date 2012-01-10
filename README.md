@@ -210,7 +210,7 @@ esac
 exit 0
 ```
 
-Make sure you change the variable $li3\_app to match your application's `app/`
+Make sure you change the variable `$li3_app` to match your application's `app/`
 directory. Once you've done that, you can start / restart / shutdown the daemon 
 the usual initscripts way. For example, you can start the daemon with:
 
