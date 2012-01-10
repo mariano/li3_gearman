@@ -104,13 +104,13 @@ through the pool to respawn workers whenever other workers are finished, for
 any reason. You can also limit the total number of workers which are spawned
 as a result of resucitation with the option `--limit`.
 
-### Adding an init.d/rc.d script ###
+### Adding an Initscript ###
 
 If you want to have li3_gearman start at boottime and shutdown accordingly,
 you may want to look into init scripts for your local system. If you are using
 [Initscripts] [linux-initscripts], it gets pretty easy. Create a file named 
-`li3_gearmand` and place it in your initscripts directory (usually 
-either `/etc/rc.d` or `/etc/init.d`) with the following contents:
+`li3_gearmand`, make it executable (`chmod +x li3_gearmand`) and place it in 
+your initscripts directory (usually either `/etc/rc.d` or `/etc/init.d`) with the following contents:
 
 ```bash
 #!/bin/bash
