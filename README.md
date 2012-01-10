@@ -109,7 +109,7 @@ as a result of resucitation with the option `--limit`.
 If you want to have li3_gearman start at boottime and shutdown accordingly,
 you may want to look into init scripts for your local system. If you are using
 [Initscripts] [linux-initscripts], it gets pretty easy. Create a file named 
-`li3\_gearmand` and place it in your initscripts directory (usually 
+`li3_gearmand` and place it in your initscripts directory (usually 
 either `/etc/rc.d` or `/etc/init.d`) with the following contents:
 
 ```bash
