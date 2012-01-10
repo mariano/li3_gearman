@@ -104,6 +104,120 @@ through the pool to respawn workers whenever other workers are finished, for
 any reason. You can also limit the total number of workers which are spawned
 as a result of resucitation with the option `--limit`.
 
+### Adding an init.d/rc.d script ###
+
+If you want to have li3_gearman start at boottime and shutdown accordingly,
+you may want to look into init scripts for your local system. If you are using
+[Initscripts] [linux-initscripts], it gets pretty easy. Create a file named 
+`li3\_gearmand` and place it in your initscripts directory (usually 
+either `/etc/rc.d` or `/etc/init.d`) with the following contents:
+
+```bash
+#!/bin/bash
+
+# Uncomment and change the line below to match the app/ directory of your
+# lithium application
+
+#li3_app=/path/to/app
+
+. /etc/rc.conf
+. /etc/rc.d/functions
+
+if [ -z "$li3_app" ]; then
+    echo "You must set \$li3_app to point to your lithium's app/ folder"
+    stat_fail
+    exit 1
+fi
+
+if [ -z "$li3" ]; then
+    li3_core=${li3_app%/*}
+    if [ -x "li3" ]; then
+        li3="li3"
+    elif [ -x "$li3_app/app/libraries/lithium/console/li3" ]; then
+        li3="$li3_app/app/libraries/lithium/console/li3"
+    elif [ -x "$li3_core/libraries/lithium/console/li3" ]; then
+        li3="$li3_core/libraries/lithium/console/li3"
+    fi
+fi
+
+if [ -z "$li3" -o ! -x "$li3" ]; then
+    echo $li3
+    echo "You must set \$li3 to point to the li3 console binary"
+    stat_fail
+    exit 1
+fi
+
+daemon_bin="$li3 --app=$li3_app gearmand"
+daemon_name=$(basename $0)
+PIDF="/var/run/$daemon_name.pid"
+
+get_pid() {
+    [ -f $PIDF ] && cat $PIDF
+}
+
+case "$1" in
+  start)
+    stat_busy "Starting $daemon_name daemon"
+
+    PID=$(get_pid)
+    if [ -z "$PID" ]; then
+      [ -f $PIDF ] && rm -f $PIDF
+      $daemon_bin start --daemon --pid=$PIDF
+      if [ $? -gt 0 ]; then
+        stat_fail
+        exit 1
+      else
+        add_daemon $daemon_name
+        stat_done
+      fi
+    else
+      stat_fail
+      exit 1
+    fi
+    ;;
+
+  stop)
+    stat_busy "Stopping $daemon_name daemon"
+    PID=$(get_pid)
+    # KILL
+    [ ! -z "$PID" ] && kill $PID &> /dev/null
+    #
+    if [ $? -gt 0 ]; then
+      stat_fail
+      exit 1
+    else
+      rm_daemon $daemon_name
+      rm -f $PIDF &> /dev/null
+      stat_done
+    fi
+    ;;
+
+  restart)
+    $0 stop
+    sleep 3
+    $0 start
+    ;;
+
+  status)
+    stat_busy "Checking $daemon_name status";
+    ck_status $daemon_name
+    ;;
+
+  *)
+    echo "usage: $0 {start|stop|restart|status}"
+esac
+
+exit 0
+```
+
+Make sure you change the variable $li3\_app to match your application's `app/`
+directory. Once you've done that, you can start / restart / shutdown the daemon 
+the usual initscripts way. For example, you can start the daemon with:
+
+```bash
+$ rc.d start li3_gearmand
+```
+
 ## Triggering jobs ##
 
 Jobs can be triggered using the `Gearman::run()` method. This method takes the
@@ -255,3 +369,4 @@ I am app\tasks\Hello::say
 [license]: http://www.opensource.org/licenses/bsd-license.php
 [gearman-doc-dobackground]: http://docs.php.net/manual/en/gearmanclient.dobackground.php
 [gearman-bug-800177]: https://bugs.launchpad.net/gearmand/+bug/800177
+[linux-initscripts]: https://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts

@@ -284,6 +284,7 @@ class Gearmand extends \lithium\console\Command {
         }
 
         $this->log('Registering function ' . get_called_class() . '::run');
+        $worker->addFunction(get_called_class() . '::run', array($this, '_work'));
 
         try {
             if (!$this->blocking) {
