@@ -56,14 +56,14 @@ arguments will show a message similar to this:
 
 ```text
 USAGE
-    li3 gearmand start
+    li3 gearmand start [<config>]
     li3 gearmand stop
     li3 gearmand restart
 DESCRIPTION
     Gearman daemon implementation in Lithium.
 OPTIONS
     start
-        Start the daemon.
+        Start the daemon using the given configuration.
     stop
         Stop the daemon. Only applicable if started in daemon mode.
     restart
@@ -206,7 +206,7 @@ You should see an output similar to the following (and the console should
 not return to the prompt, since we are not running in daemon mode):
 
 ```text
-Daemon started with PID 6331
+li3_gearman[6331]: Daemon started with PID 6331
 li3_gearman[6331]: (Daemon) Created worker number 1 with PID 6332
 li3_gearman[6332]: (Worker) Starting worker
 li3_gearman[6332]: (Worker) Creating Gearman worker

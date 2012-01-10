@@ -9,8 +9,9 @@
 namespace li3_gearman\extensions\command;
 
 use RuntimeException;
-use GearmanWorker;
+use GearmanException;
 use GearmanJob;
+use GearmanWorker;
 use lithium\core\ConfigException;
 use li3_gearman\Gearman;
 
@@ -95,8 +96,16 @@ class Gearmand extends \lithium\console\Command {
         'pid' => null,
         'daemonPid' => null,
         'isDaemon' => false,
+        'isWorker' => false,
         'logOpened' => false
     );
+
+    /**
+     * Configuration settings
+     *
+     * @var array
+     */
+    protected $_settings;
 
     /**
      * Initialization and sanity checks
@@ -112,9 +121,18 @@ class Gearmand extends \lithium\console\Command {
     }
 
     /**
-     * Start the daemon.
+     * Start the daemon using the given configuration.
+     *
+     * @param string $config Gearman configuration name
      */
-    public function start() {
+    public function start($config = 'default') {
+        $this->_settings = Gearman::config($config);
+        if (!isset($this->_settings)) {
+            throw new ConfigException("{$config} is not a valid li3_gearman configuration");
+        } elseif (empty($this->_settings['servers'])) {
+            throw new ConfigException("{$config} defines no servers");
+        }
+
         $this->init();
 
         foreach (array('posix_kill', 'pcntl_fork') as $function) {
@@ -152,7 +170,7 @@ class Gearmand extends \lithium\console\Command {
             $pid = posix_getpid();
         }
 
-        $this->out("Daemon started with PID {$pid}");
+        $this->log("Daemon started with PID {$pid}");
 
         if (!$this->daemon) {
             $this->daemon();
@@ -164,7 +182,7 @@ class Gearmand extends \lithium\console\Command {
      */
     public function stop() {
         $this->init();
-        $this->out('Sending daemon the shutdown signal');
+        $this->log('Sending daemon the shutdown signal');
         $this->sendSignalToDaemon(SIGTERM);
     }
 
@@ -173,7 +191,7 @@ class Gearmand extends \lithium\console\Command {
      */
     public function restart() {
         $this->init();
-        $this->out('Sending daemon the restart signal');
+        $this->log('Sending daemon the restart signal');
         $this->sendSignalToDaemon(SIGHUP);
     }
 
@@ -193,6 +211,10 @@ class Gearmand extends \lithium\console\Command {
         }
 
         $this->startWorkers();
+
+        if (!pcntl_signal(SIGUSR1, array($this, '_signal'))) {
+            throw new RuntimeException("Could not register signal SIGUSR1");
+        }
 
         while ($this->_process['run']) {
             if ($this->_process['reload']) {
@@ -256,38 +278,45 @@ class Gearmand extends \lithium\console\Command {
         if (!$this->blocking) {
             $worker->addOptions(GEARMAN_WORKER_NON_BLOCKING);
         }
-        $worker->addServer();
 
-        $this->log('Registering function ' . get_called_class() . '::run');
-        $worker->addFunction(get_called_class() . '::run', array($this, '_work'));
-
-        if (!$this->blocking) {
-            while ($this->_process['run'] && (
-                $worker->work() ||
-                $worker->returnCode() == GEARMAN_IO_WAIT ||
-                $worker->returnCode() == GEARMAN_NO_JOBS
-            )) {
-                if ($worker->returnCode() == GEARMAN_SUCCESS) {
-                    $this->log('Got new job');
-                    continue;
-                }
-
-                if (!$worker->wait()) {
-                    if ($worker->returnCode() == GEARMAN_NO_ACTIVE_FDS) {
-                        $this->log('Got disconnected, so waiting for server...');
-                        sleep(5);
-                        continue;
-                    }
-                    break;
-                }
-            }
-        } else {
-            while($this->_process['run'] && $worker->work()) {
-                usleep(50000);
-            }
+        foreach($this->_settings['servers'] as $server) {
+            $worker->addServer($server);
         }
 
-        $worker->unregisterAll();
+        $this->log('Registering function ' . get_called_class() . '::run');
+
+        try {
+            if (!$this->blocking) {
+                while ($this->_process['run'] && (
+                    $worker->work() ||
+                    $worker->returnCode() == GEARMAN_IO_WAIT ||
+                    $worker->returnCode() == GEARMAN_NO_JOBS
+                )) {
+                    if ($worker->returnCode() == GEARMAN_SUCCESS) {
+                        $this->log('Got new job');
+                        continue;
+                    }
+
+                    if (!$worker->wait()) {
+                        if ($worker->returnCode() == GEARMAN_NO_ACTIVE_FDS) {
+                            $this->log('Got disconnected, so waiting for server...');
+                            sleep(5);
+                            continue;
+                        }
+                        break;
+                    }
+                }
+            } else {
+                while($this->_process['run'] && $worker->work()) {
+                    usleep(50000);
+                }
+            }
+
+            $worker->unregisterAll();
+        } catch(GearmanException $e) {
+            $this->log('ERROR: ' . $e->getMessage(), LOG_ERR);
+            posix_kill($this->_process['daemonPid'], SIGUSR1);
+        }
 
         $this->log('Worker finished');
 
@@ -330,6 +359,7 @@ class Gearmand extends \lithium\console\Command {
         }
 
         $this->_process['isDaemon'] = false;
+        $this->_process['isWorker'] = true;
         $this->_process['pid'] = posix_getpid();
 
         $this->worker();
@@ -420,6 +450,9 @@ class Gearmand extends \lithium\console\Command {
             case SIGHUP:
                 $this->_process['reload'] = true;
             break;
+            case SIGUSR1:
+                $this->log('Worker asked to abort startup process', LOG_WARNING);
+                $this->_process['run'] = false;
             case SIGTERM:
                 $this->_process['run'] = false;
             break;
@@ -442,9 +475,16 @@ class Gearmand extends \lithium\console\Command {
             openlog("li3_gearman", $options, LOG_USER);
         }
 
-        $message = ($this->_process['isDaemon'] ?
-            '(Daemon)' :
-            '(Worker)') . ' ' . $message;
+        if ($this->_process['isDaemon']) {
+            $actor = 'Daemon';
+        } elseif ($this->_process['isWorker']) {
+            $actor = 'Worker';
+        }
+
+        if (!empty($actor)) {
+            $message = "({$actor}) {$message}";
+        }
+
         syslog($level, $message);
     }
 
