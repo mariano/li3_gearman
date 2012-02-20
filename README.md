@@ -57,14 +57,14 @@ arguments will show a message similar to this:
 ```text
 USAGE
     li3 gearmand start [<config>]
-    li3 gearmand stop
+    li3 gearmand shutdown
     li3 gearmand restart
 DESCRIPTION
     Gearman daemon implementation in Lithium.
 OPTIONS
     start
         Start the daemon using the given configuration.
-    stop
+    shutdown
         Stop the daemon. Only applicable if started in daemon mode.
     restart
         Restart the daemon. Only applicable if started in daemon mode.

@@ -180,7 +180,7 @@ class Gearmand extends \lithium\console\Command {
 	/**
 	 * Stop the daemon. Only applicable if started in daemon mode.
 	 */
-	public function stop() {
+	public function shutdown() {
 		$this->init();
 		$this->log('Sending daemon the shutdown signal');
 		$this->sendSignalToDaemon(SIGTERM);
