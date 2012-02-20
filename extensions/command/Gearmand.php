@@ -500,7 +500,7 @@ class Gearmand extends \lithium\console\Command {
             closelog();
             $this->_process['logOpened'] = false;
         }
-        return parent::_stop($status);
+        return parent::stop($status);
     }
 }
 ?>
