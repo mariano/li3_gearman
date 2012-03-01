@@ -97,7 +97,8 @@ class Gearmand extends \lithium\console\Command {
 		'daemonPid' => null,
 		'isDaemon' => false,
 		'isWorker' => false,
-		'logOpened' => false
+		'logOpened' => false,
+		'exit' => 0
 	);
 
 	/**
@@ -236,7 +237,7 @@ class Gearmand extends \lithium\console\Command {
 
 		$this->killWorkers();
 
-		$this->_stop();
+		$this->_stop($this->_process['exit']);
 	}
 
 	/**
@@ -454,6 +455,7 @@ class Gearmand extends \lithium\console\Command {
 			case SIGUSR1:
 				$this->log('Worker asked to abort startup process', LOG_WARNING);
 				$this->_process['run'] = false;
+				$this->_process['exit'] = 1;
 			case SIGTERM:
 				$this->_process['run'] = false;
 			break;
