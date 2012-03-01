@@ -49,6 +49,15 @@ class Job extends \lithium\core\Object {
 	}
 
 	/**
+	 * Get Gearman client
+	 *
+	 * @return object
+	 */
+	public function getClient() {
+		return $this->client;
+	}
+
+	/**
 	 * Run a task
 	 *
 	 * @param string $task Fully qualified class name, with optional method name
