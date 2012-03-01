@@ -91,17 +91,20 @@ class Job extends \lithium\core\Object {
 			$task .= '::run';
 		}
 
-		$action = 'do';
+		$action = null;
 		switch($options['priority']) {
 			case 'low':
 				$action = $options['background'] ? 'doLowBackground' : 'doLow';
 			break;
 			case 'normal':
-				$action = $options['background'] ? 'doBackground' : 'doLow';
+				$action = $options['background'] ? 'doBackground' : 'doNormal';
 			break;
 			case 'high':
 				$action = $options['background'] ? 'doHighBackground' : 'doHigh';
 			break;
+		}
+		if (empty($action)) {
+			throw new Exception('Could not map to a gearman action');
 		}
 
 		$configName = $options['configName'];
