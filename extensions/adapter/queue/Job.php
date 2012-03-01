@@ -97,7 +97,9 @@ class Job extends \lithium\core\Object {
 				$action = $options['background'] ? 'doLowBackground' : 'doLow';
 			break;
 			case 'normal':
-				$action = $options['background'] ? 'doBackground' : 'doNormal';
+				$action = $options['background'] ? 'doBackground' : (
+					method_exists($this->client, 'doNormal') ? 'doNormal' : 'do'
+				);
 			break;
 			case 'high':
 				$action = $options['background'] ? 'doHighBackground' : 'doHigh';
