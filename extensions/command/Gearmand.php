@@ -13,12 +13,20 @@ use GearmanException;
 use GearmanJob;
 use GearmanWorker;
 use lithium\core\ConfigException;
+use lithium\core\Environment;
 use li3_gearman\Gearman;
 
 /**
  * Gearman daemon implementation in Lithium.
  */
 class Gearmand extends \lithium\console\Command {
+	/**
+	 * Environment to work on
+	 *
+	 * @var string
+	 */
+	public $environment = 'production';
+
 	/**
 	 * Enable to interact with Gearman in blocking mode. Default: disabled
 	 *
@@ -133,6 +141,8 @@ class Gearmand extends \lithium\console\Command {
 		} elseif (empty($this->_settings['servers'])) {
 			throw new ConfigException("{$config} defines no servers");
 		}
+
+		Environment::set($this->environment);
 
 		$this->init();
 
