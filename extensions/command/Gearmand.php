@@ -39,7 +39,7 @@ class Gearmand extends \lithium\console\Command {
 	 *
 	 * @var int
 	 */
-	public $limit = 8;
+	public $limit = 0;
 
 	/**
 	 * Location of PID file. Only applicable if daemon mode is enabled.

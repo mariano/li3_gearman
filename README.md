@@ -162,7 +162,7 @@ case "$1" in
     PID=$(get_pid)
     if [ -z "$PID" ]; then
       [ -f $PIDF ] && rm -f $PIDF
-      $daemon_bin start --daemon --pid=$PIDF
+      $daemon_bin start --daemon --pid=$PIDF --resucitate
       if [ $? -gt 0 ]; then
         stat_fail
         exit 1
