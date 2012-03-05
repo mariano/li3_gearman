@@ -231,11 +231,11 @@ class Gearmand extends \lithium\console\Command {
 
 		$this->log('Shutting down...', LOG_NOTICE);
 
+		$this->killWorkers();
+
 		if (file_exists($this->pid)) {
 			unlink($this->pid);
 		}
-
-		$this->killWorkers();
 
 		$this->_stop($this->_process['exit']);
 	}
@@ -387,7 +387,7 @@ class Gearmand extends \lithium\console\Command {
 	protected function killWorkers() {
 		foreach($this->_workers['pids'] as $pid) {
 			$this->log("Shutting down worker {$pid}");
-			posix_kill($pid, SIGTERM);
+			posix_kill($pid, $this->blocking ? 9 : SIGTERM);
 		}
 		foreach($this->_workers['pids'] as $i => $pid) {
 			pcntl_waitpid($pid, $status);

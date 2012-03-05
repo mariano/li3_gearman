@@ -306,9 +306,9 @@ class TestHelloController extends \lithium\action\Controller {
 ?>
 ```
 
-Ok we are now ready to start the daemon. For the purpose of testing (Gearman
-0.26 has currently [some issues] [gearman-bug-800177] when running in non 
-blocking mode on x86_64 architectures) I'll run this in blocking mode. Since we
+Ok we are now ready to start the daemon. For the purpose of testing (at the time
+of this writing, the PHP Gearman extension has [some issues] [php-bug-60764] 
+when running in non blocking mode) I'll run this in blocking mode. Since we
 also want some output, we'll ask the daemon to be verbose. Standing in your 
 lithium core directory, run:
 
@@ -368,5 +368,5 @@ I am app\tasks\Hello::say
 [gearman]: http://gearman.org
 [license]: http://www.opensource.org/licenses/bsd-license.php
 [gearman-doc-dobackground]: http://docs.php.net/manual/en/gearmanclient.dobackground.php
-[gearman-bug-800177]: https://bugs.launchpad.net/gearmand/+bug/800177
+[php-bug-60764]: https://bugs.php.net/bug.php?id=60764
 [linux-initscripts]: https://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts
