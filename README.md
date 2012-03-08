@@ -112,6 +112,12 @@ you may want to look into init scripts for your local system. If you are using
 `li3_gearmand`, make it executable (`chmod +x li3_gearmand`) and place it in 
 your initscripts directory (usually either `/etc/rc.d` or `/etc/init.d`) with the following contents:
 
+> Adding the initscript, and running the necessary commands so your initscript
+> is auto-started is **definitiely not** the only thing you should do. You
+> should make sure you have some sort of monitoring tool so if the daemon falls
+> to pieces, or no active workers are waiting for jobs, you can restart the
+> daemon. A great tool for this is [monit] [monit], check it out.
+
 ```bash
 #!/bin/bash
 
@@ -370,3 +376,4 @@ I am app\tasks\Hello::say
 [gearman-doc-dobackground]: http://docs.php.net/manual/en/gearmanclient.dobackground.php
 [php-bug-60764]: https://bugs.php.net/bug.php?id=60764
 [linux-initscripts]: https://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts
+[monit]: http://mmonit.com/monit
