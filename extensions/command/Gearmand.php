@@ -21,7 +21,7 @@ use li3_gearman\Gearman;
  */
 class Gearmand extends \lithium\console\Command {
 	/**
-	 * Override nvironment to work on. Defaults to: environment set in bootstrap
+	 * Override environment to work on. Defaults to: environment set in bootstrap
 	 *
 	 * @var string
 	 */
