@@ -21,7 +21,7 @@ use li3_gearman\Gearman;
  */
 class Gearmand extends \lithium\console\Command {
 	/**
-	 * Override environment. Defaults to: environment set in bootstrap
+	 * Override nvironment to work on. Defaults to: environment set in bootstrap
 	 *
 	 * @var string
 	 */
@@ -131,6 +131,7 @@ class Gearmand extends \lithium\console\Command {
 	protected function init() {
 		declare(ticks = 30);
 
+		$this->atomic = !empty($this->atomic);
 		if ($this->atomic) {
 			$this->resucitate = true;
 			$this->limit = 0;
@@ -158,6 +159,11 @@ class Gearmand extends \lithium\console\Command {
 
 		if (isset($this->environment)) {
 			Environment::set($this->environment);
+		} else {
+			$this->environment = Environment::get();
+			if (!$this->environment) {
+				throw new ConfigException("Could not determine environment");
+			}
 		}
 
 		$this->init();
