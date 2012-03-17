@@ -21,11 +21,20 @@ use li3_gearman\Gearman;
  */
 class Gearmand extends \lithium\console\Command {
 	/**
-	 * Environment to work on
+	 * Override environment. Defaults to: environment set in bootstrap
 	 *
 	 * @var string
 	 */
-	public $environment = 'production';
+	public $environment;
+
+	/**
+	 * If enabled, once a worker has performed its job, it will quit and a new
+	 * worker will be spawned (thus this setting means that `resucitate` is
+	 * automatically enabled, and `limit` set to 0). Default: enabled
+	 *
+	 * @var boolean
+	 */
+	public $atomic = true;
 
 	/**
 	 * Enable to interact with Gearman in blocking mode. Default: disabled
@@ -122,6 +131,11 @@ class Gearmand extends \lithium\console\Command {
 	protected function init() {
 		declare(ticks = 30);
 
+		if ($this->atomic) {
+			$this->resucitate = true;
+			$this->limit = 0;
+		}
+
 		foreach (array('posix_kill', 'pcntl_fork') as $function) {
 			if (!function_exists($function)) {
 				throw new ConfigException("Can't find function {$function}");
@@ -142,7 +156,9 @@ class Gearmand extends \lithium\console\Command {
 			throw new ConfigException("{$config} defines no servers");
 		}
 
-		Environment::set($this->environment);
+		if (isset($this->environment)) {
+			Environment::set($this->environment);
+		}
 
 		$this->init();
 
@@ -300,16 +316,18 @@ class Gearmand extends \lithium\console\Command {
 		try {
 			if (!$this->blocking) {
 				while ($this->_process['run'] && (
-					$worker->work() ||
+					@$worker->work() ||
 					$worker->returnCode() == GEARMAN_IO_WAIT ||
 					$worker->returnCode() == GEARMAN_NO_JOBS
 				)) {
 					if ($worker->returnCode() == GEARMAN_SUCCESS) {
-						$this->log('Got new job');
+						if ($this->atomic) {
+							$this->_process['run'] = false;
+						}
 						continue;
 					}
 
-					if (!$worker->wait()) {
+					if (!@$worker->wait()) {
 						if ($worker->returnCode() == GEARMAN_NO_ACTIVE_FDS) {
 							$this->log('Got disconnected, so waiting for server...');
 							sleep(5);
@@ -320,7 +338,11 @@ class Gearmand extends \lithium\console\Command {
 				}
 			} else {
 				while($this->_process['run'] && $worker->work()) {
-					usleep(50000);
+					if ($this->atomic) {
+						$this->_process['run'] = false;
+					} else {
+						usleep(50000);
+					}
 				}
 			}
 
