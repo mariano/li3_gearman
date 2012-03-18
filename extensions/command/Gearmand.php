@@ -29,7 +29,7 @@ class Gearmand extends \lithium\console\Command {
 
 	/**
 	 * If enabled, once a worker has performed its job, it will quit and a new
-	 * worker will be spawned (thus this setting means that `resucitate` is
+	 * worker will be spawned (thus this setting means that `resuscitate` is
 	 * automatically enabled, and `limit` set to 0). Default: enabled
 	 *
 	 * @var boolean
@@ -75,7 +75,7 @@ class Gearmand extends \lithium\console\Command {
 	 *
 	 * @var boolean
 	 */
-	public $resucitate = false;
+	public $resuscitate = false;
 
 	/**
 	 * Enable to print out debug messages. If not enabled, messages go to
@@ -133,7 +133,7 @@ class Gearmand extends \lithium\console\Command {
 
 		$this->atomic = !empty($this->atomic);
 		if ($this->atomic) {
-			$this->resucitate = true;
+			$this->resuscitate = true;
 			$this->limit = 0;
 		}
 
@@ -375,7 +375,7 @@ class Gearmand extends \lithium\console\Command {
 		}
 
 		if (
-			$this->resucitate &&
+			$this->resuscitate &&
 			$this->limit > 0 &&
 			$this->_workers['started'] >= $this->limit
 		) {
@@ -454,7 +454,7 @@ class Gearmand extends \lithium\console\Command {
 			for ($i = $count - 1; $i >= $this->workers; $i--) {
 				pcntl_waitpid($valid[$i], $status);
 			}
-		} elseif ($this->resucitate && $count < $this->workers) {
+		} elseif ($this->resuscitate && $count < $this->workers) {
 			for ($i = $count; $i < $this->workers; $i++) {
 				$this->log('Replacing finished worker with a new one');
 				$this->startWorker(true);

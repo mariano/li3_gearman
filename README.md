@@ -68,6 +68,12 @@ OPTIONS
         Stop the daemon. Only applicable if started in daemon mode.
     restart
         Restart the daemon. Only applicable if started in daemon mode.
+    --environment=<string>
+        Override environment to work on. Defaults to: environment set in bootstrap
+    --atomic
+        If enabled, once a worker has performed its job, it will quit and a new
+        worker will be spawned (thus this setting means that `resuscitate` is
+        automatically enabled, and `limit` set to 0). Default: enabled
     --blocking
         Enable to interact with Gearman in blocking mode. Default: disabled
     --daemon
@@ -78,7 +84,7 @@ OPTIONS
     --pid=<string>
         Location of PID file. Only applicable if daemon mode is enabled.
         Default: /var/run/li3_gearman.pid
-    --resucitate
+    --resuscitate
         If enabled, there will always be the number of workers defined in the
         setting "workers". If a worker dies, another one will take its place,
         up until the "limit" setting is reached. If disabled, no new
@@ -99,10 +105,10 @@ using the `--daemon` option.
 Whatever method you decide to use, note that a certain amount of workers
 (processes) are spawned. This number is governed by the option `--workers`. If
 you wish to ensure that there is always a certain number of workers active
-and handling jobs, use the option `--resucitate`, which will periodically loop
+and handling jobs, use the option `--resuscitate`, which will periodically loop
 through the pool to respawn workers whenever other workers are finished, for 
 any reason. You can also limit the total number of workers which are spawned
-as a result of resucitation with the option `--limit`.
+as a result of resuscitation with the option `--limit`.
 
 ### Adding an Initscript ###
 
@@ -168,7 +174,7 @@ case "$1" in
     PID=$(get_pid)
     if [ -z "$PID" ]; then
       [ -f $PIDF ] && rm -f $PIDF
-      $daemon_bin start --daemon --pid=$PIDF --resucitate
+      $daemon_bin start --blocking --daemon --pid=$PIDF
       if [ $? -gt 0 ]; then
         stat_fail
         exit 1
