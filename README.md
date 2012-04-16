@@ -62,6 +62,8 @@ USAGE
 DESCRIPTION
     Gearman daemon implementation in Lithium.
 OPTIONS
+    ping
+        Test that at least a worker is working
     start
         Start the daemon using the given configuration.
     shutdown
@@ -228,6 +230,16 @@ the usual initscripts way. For example, you can start the daemon with:
 
 ```bash
 $ rc.d start li3_gearmand
+```
+
+## Testing ##
+
+Once you have launched the daemon, you can quickly test that the setup is
+working properly via the `ping` command. For example:
+
+```bash
+$ li3 gearmand ping
+Pinging... OK
 ```
 
 ## Triggering jobs ##

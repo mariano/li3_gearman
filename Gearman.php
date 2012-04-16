@@ -117,5 +117,12 @@ class Gearman extends \lithium\core\Adaptable {
 		}
 		return $config;
 	}
+
+	/**
+	 * Executed through the Gearmand shell for testing that a worker is alive
+	 */
+	public static function ping() {
+		return 'OK';
+	}
 }
 ?>
