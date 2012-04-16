@@ -148,7 +148,9 @@ class Gearmand extends \lithium\console\Command {
 	 * Test that at least a worker is working
 	 */
 	public function ping($config = 'default') {
-		$this->out('Pinging... ', false);
+		if ($this->verbose) {
+			$this->out('Pinging... ', false);
+		}
 		$job = Gearman::adapter($config);
 		$job->getClient()->setTimeout(5000);
 		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', array(), array('background' => false));
