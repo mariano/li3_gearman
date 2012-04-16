@@ -112,6 +112,16 @@ through the pool to respawn workers whenever other workers are finished, for
 any reason. You can also limit the total number of workers which are spawned
 as a result of resuscitation with the option `--limit`.
 
+### Testing ###
+
+Once you have launched the daemon, you can quickly test that the setup is
+working properly via the `ping` command. For example:
+
+```bash
+$ li3 gearmand ping --verbose
+Pinging... OK
+```
+
 ### Adding an Initscript ###
 
 If you want to have li3_gearman start at boottime and shutdown accordingly,
@@ -230,16 +240,6 @@ the usual initscripts way. For example, you can start the daemon with:
 
 ```bash
 $ rc.d start li3_gearmand
-```
-
-## Testing ##
-
-Once you have launched the daemon, you can quickly test that the setup is
-working properly via the `ping` command. For example:
-
-```bash
-$ li3 gearmand ping
-Pinging... OK
 ```
 
 ## Triggering jobs ##
