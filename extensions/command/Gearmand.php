@@ -299,8 +299,7 @@ class Gearmand extends \lithium\console\Command {
 			if (empty($workload)) {
 				throw new RuntimeException("No workload");
 			}
-			$params = @unserialize($workload);
-
+			$params = @json_decode($workload, true);
 			if (!$params || !is_array($params)) {
 				throw new RuntimeException("Invalid workload: {$workload}");
 			}

@@ -123,7 +123,7 @@ class Job extends \lithium\core\Object {
 		$configName = $options['configName'];
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
-			serialize(compact('args', 'env', 'configName', 'task'))
+			json_encode(compact('args', 'env', 'configName', 'task'))
 		);
 	}
 
