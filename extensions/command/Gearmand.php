@@ -300,11 +300,17 @@ class Gearmand extends \lithium\console\Command {
 				throw new RuntimeException("No workload");
 			}
 			$params = @unserialize($workload);
+
 			if (!$params || !is_array($params)) {
 				throw new RuntimeException("Invalid workload: {$workload}");
 			}
 
-			$result = Gearman::execute($params['configName'], $params['task'], $params['args']);
+			$result = Gearman::execute(
+				$params['configName'],
+				$params['task'],
+				$params['args'],
+				!empty($params['env']) ? $params['env'] : array()
+			);
 		} catch(\Exception $e) {
 			$this->log('ERROR: ' . $e->getMessage(), LOG_ERR);
 		}

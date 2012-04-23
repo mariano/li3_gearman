@@ -63,17 +63,27 @@ class Job extends \lithium\core\Object {
 	 * @param string $task Fully qualified class name, with optional method name
 	 * @param array $args Arguments to pass to the task
 	 * @param array $options Options:
-	 *						- boolean background: wether to run task in
-	 *						background
-	 *						- string priority: Prority. One of: low, normal,
-	 *						high
+	 *                      - boolean background: wether to run task in
+	 *                      background
+	 *                      - string priority: Prority. One of: low, normal,
+	 *                      high
+	 *                      - array env: array of environment settings to set
+	 *                      (from $_SERVER) for proper routing. If omitted,
+	 *                      automatically set this.
 	 * @return mixed If background, job handle. Otherwise job's return value
 	 */
 	public function run($task, array $args, array $options) {
 		$options = $options + array(
 			'configName' => null,
 			'background' => true,
-			'priority' => 'normal'
+			'priority' => 'normal',
+			'env' => array_intersect_key($_SERVER, array(
+				'HTTP_HOST' => null,
+				'SCRIPT_FILENAME' => null,
+				'SCRIPT_NAME' => null,
+				'PHP_SELF' => null,
+				'HTTPS' => null
+			))
 		);
 
 		if (empty($options['configName'])) {
@@ -109,10 +119,11 @@ class Job extends \lithium\core\Object {
 			throw new Exception('Could not map to a gearman action');
 		}
 
+		$env = $options['env'];
 		$configName = $options['configName'];
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
-			serialize(compact('args', 'configName', 'task'))
+			serialize(compact('args', 'env', 'configName', 'task'))
 		);
 	}
 
@@ -122,11 +133,16 @@ class Job extends \lithium\core\Object {
 	 *
 	 * @param string $task Fully qualified task name
 	 * @param array $args Arguments for the call
+	 * @param array $env Environment settings to merge on $_SERVER
 	 * @return mixed Returned value
 	 */
-	public function execute($task, array $args = array()) {
+	public function execute($task, array $args = array(), array $env = array()) {
 		if (!is_callable($task)) {
 			throw new RuntimeException("Invalid task {$task}");
+		}
+
+		if (!empty($env)) {
+			$_SERVER = $env + $_SERVER;
 		}
 
 		return call_user_func_array($task, $args);
