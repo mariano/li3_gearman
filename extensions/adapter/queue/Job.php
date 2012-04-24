@@ -11,6 +11,7 @@ namespace li3_gearman\extensions\adapter\queue;
 
 use RuntimeException;
 use lithium\core\ConfigException;
+use lithium\core\Environment;
 use GearmanClient;
 
 /**
@@ -120,6 +121,7 @@ class Job extends \lithium\core\Object {
 		}
 
 		$env = $options['env'];
+		$env['environment'] = Environment::get();
 		$configName = $options['configName'];
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
@@ -139,6 +141,11 @@ class Job extends \lithium\core\Object {
 	public function execute($task, array $args = array(), array $env = array()) {
 		if (!is_callable($task)) {
 			throw new RuntimeException("Invalid task {$task}");
+		}
+
+		if (array_key_exists('environment', $env)) {
+			Environment::set($env['environment']);
+			unset($env['environment']);
 		}
 
 		if (!empty($env)) {
