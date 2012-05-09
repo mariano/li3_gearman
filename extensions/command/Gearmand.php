@@ -154,7 +154,12 @@ class Gearmand extends \lithium\console\Command {
 		$job = Gearman::adapter($config);
 		$job->getClient()->setTimeout(5000);
 		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', array(), array('background' => false));
-		$this->out(!empty($result) ? $result : 'ERROR');
+		if ($result) {
+			$this->out($result);
+			return;
+		}
+		$this->error('ERROR');
+		$this->_stop(1);
 	}
 
 	/**
