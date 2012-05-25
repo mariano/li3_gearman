@@ -86,11 +86,11 @@ class Gearmand extends \lithium\console\Command {
 	public $verbose = false;
 
 	/**
-	 * How many workers to run. Default: 4
+	 * How many workers to run. Default: 1
 	 *
 	 * @var int
 	 */
-	public $workers = 4;
+	public $workers = 1;
 
 	/**
 	 * List of worker pids, and how many overall workers have been spawned

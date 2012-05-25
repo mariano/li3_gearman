@@ -66,6 +66,10 @@ class Job extends \lithium\core\Object {
 	 * @param array $options Options:
 	 *                      - boolean background: wether to run task in
 	 *                      background
+	 *                      - mixed unique: If true, generate a unique ID so two
+	 *                      tasks with the same workload are considered equal.
+	 *                      If string, use this unique ID for this task. If empty
+	 *                      or false, do not treat this as a unique task.
 	 *                      - string priority: Prority. One of: low, normal,
 	 *                      high
 	 *                      - array env: array of environment settings to set
@@ -77,6 +81,7 @@ class Job extends \lithium\core\Object {
 		$options = $options + array(
 			'configName' => null,
 			'background' => true,
+			'unique' => true,
 			'priority' => 'normal',
 			'env' => array_intersect_key($_SERVER, array(
 				'HTTP_HOST' => null,
@@ -120,12 +125,18 @@ class Job extends \lithium\core\Object {
 			throw new Exception('Could not map to a gearman action');
 		}
 
+		$workload = json_encode(compact('args', 'env', 'configName', 'task'));
+		if ($options['unique'] && !is_string($options['unique'])) {
+			$options['unique'] = md5($workload);
+		}
+
 		$env = $options['env'];
 		$env['environment'] = Environment::get();
 		$configName = $options['configName'];
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
-			json_encode(compact('args', 'env', 'configName', 'task'))
+			$workload,
+			!empty($options['unique']) ? $options['unique'] : null
 		);
 	}
 
