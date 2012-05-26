@@ -125,14 +125,14 @@ class Job extends \lithium\core\Object {
 			throw new Exception('Could not map to a gearman action');
 		}
 
+		$env = $options['env'];
+		$env['environment'] = Environment::get();
+		$configName = $options['configName'];
 		$workload = json_encode(compact('args', 'env', 'configName', 'task'));
 		if ($options['unique'] && !is_string($options['unique'])) {
 			$options['unique'] = md5($workload);
 		}
 
-		$env = $options['env'];
-		$env['environment'] = Environment::get();
-		$configName = $options['configName'];
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
 			$workload,
