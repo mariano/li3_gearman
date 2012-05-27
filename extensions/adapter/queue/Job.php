@@ -81,7 +81,7 @@ class Job extends \lithium\core\Object {
 		$options = $options + array(
 			'configName' => null,
 			'background' => true,
-			'unique' => true,
+			'unique' => false,
 			'priority' => 'normal',
 			'env' => array_intersect_key($_SERVER, array(
 				'HTTP_HOST' => null,
