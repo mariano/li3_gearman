@@ -15,6 +15,7 @@ use GearmanWorker;
 use lithium\core\ConfigException;
 use lithium\core\Environment;
 use li3_gearman\Gearman;
+use li3_gearman\extensions\adapter\queue\Job;
 
 /**
  * Gearman daemon implementation in Lithium.
@@ -153,7 +154,10 @@ class Gearmand extends \lithium\console\Command {
 		}
 		$job = Gearman::adapter($config);
 		$job->getClient()->setTimeout(5000);
-		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', array(), array('background' => false));
+		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', array(), array(
+			'priority' => Job::PRIORITY_HIGH,
+			'background' => false
+		));
 		if ($result) {
 			$this->out($result);
 			return;

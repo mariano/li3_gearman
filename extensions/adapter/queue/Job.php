@@ -18,6 +18,10 @@ use GearmanClient;
  * Executes/schedules a task
  */
 class Job extends \lithium\core\Object {
+	const PRIORITY_LOW = 'low';
+	const PRIORITY_NORMAL = 'normal';
+	const PRIORITY_HIGH = 'high';
+
 	/**
 	 * Defines fully qualified name of worker, which should implement
 	 * a run() method and must be hooked to the gearman server
