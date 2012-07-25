@@ -557,6 +557,25 @@ class Gearmand extends \lithium\console\Command {
 	}
 
 	/**
+	 * Writes a string to error stream.
+	 *
+	 * @param string $error The string to write.
+	 * @param integer|string|array $options
+	 *        integer as the number of new lines.
+	 *        string as the style
+	 *        array as :
+	 *        - nl : number of new lines to add at the end
+	 *        - style : the style name to wrap around the
+	 * @return integer
+	 */
+	public function error($error = null, $options = array('nl' => 1)) {
+		if (!empty($error)) {
+			error_log($error);
+		}
+		return parent::error($error, $options);
+	}
+
+	/**
 	 * Exit immediately. Primarily used for overrides during testing.
 	 *
 	 * @param integer|string $status integer range 0 to 254, string printed on exit
