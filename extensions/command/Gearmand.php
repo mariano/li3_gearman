@@ -301,8 +301,6 @@ class Gearmand extends \lithium\console\Command {
 	 * @return mixed Return value from job
 	 */
 	public function _work(GearmanJob $job) {
-		$this->log('Handling job');
-
 		try {
 			$workload = $job->workload();
 			if (empty($workload)) {
@@ -312,6 +310,8 @@ class Gearmand extends \lithium\console\Command {
 			if (!$params || !is_array($params)) {
 				throw new RuntimeException("Invalid workload: {$workload}");
 			}
+
+			$this->log('Handling job ' . $params['task'] . ' with arguments ' . json_encode($params['args']));
 
 			$result = Gearman::execute(
 				$params['configName'],
