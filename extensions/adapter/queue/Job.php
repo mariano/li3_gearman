@@ -300,7 +300,7 @@ class Job extends \lithium\core\Object {
 		);
 	}
 
-	protected function getRedis() {
+	public function getRedis() {
 		$config = $this->_config['redis'] + array('enabled' => false);
 		if (empty($config['enabled'])) {
 			return null;
