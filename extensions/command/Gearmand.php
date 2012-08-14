@@ -35,7 +35,7 @@ class Gearmand extends \lithium\console\Command {
 	 *
 	 * @var boolean
 	 */
-	public $atomic = true;
+	public $atomic = false;
 
 	/**
 	 * Enable to interact with Gearman in blocking mode. Default: disabled
@@ -77,6 +77,14 @@ class Gearmand extends \lithium\console\Command {
 	 * @var boolean
 	 */
 	public $resuscitate = false;
+
+	/**
+	 * If enabled, log messages are sent to user's syslog (usually
+	 * /var/log/user.log)
+	 *
+	 * @var boolean
+	 */
+	public $syslog = false;
 
 	/**
 	 * Enable to print out debug messages. If not enabled, messages go to
@@ -311,13 +319,14 @@ class Gearmand extends \lithium\console\Command {
 				throw new RuntimeException("Invalid workload: {$workload}");
 			}
 
-			$this->log('Handling job ' . $params['task'] . ' with arguments ' . json_encode($params['args']));
+			$this->log('Handling job ' . (!empty($params['id']) ? "#{$params['id']} " : '') . $params['task'] . ' with arguments ' . json_encode($params['args']));
 
 			$result = Gearman::execute(
 				$params['configName'],
 				$params['task'],
 				$params['args'],
-				!empty($params['env']) ? $params['env'] : array()
+				!empty($params['env']) ? $params['env'] : array(),
+				$params
 			);
 		} catch(\Exception $e) {
 			$this->log('ERROR: ' . $e->getMessage(), LOG_ERR);
@@ -534,7 +543,11 @@ class Gearmand extends \lithium\console\Command {
 	 * @param int $level Log level
 	 */
 	protected function log($message, $level = LOG_DEBUG) {
-		if (!$this->_process['logOpened']) {
+		if (!$this->syslog && !$this->verbose) {
+			return;
+		}
+
+		if ($this->syslog && !$this->_process['logOpened']) {
 			$this->_process['logOpened'] = true;
 			$options = LOG_PID;
 			if ($this->verbose) {
@@ -553,7 +566,11 @@ class Gearmand extends \lithium\console\Command {
 			$message = "({$actor}) {$message}";
 		}
 
-		syslog($level, $message);
+		if ($this->syslog) {
+			syslog($level, $message);
+		} else {
+			$this->out($message);
+		}
 	}
 
 	/**

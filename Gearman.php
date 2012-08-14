@@ -57,18 +57,20 @@ class Gearman extends \lithium\core\Adaptable {
 	 * @param string $action Action name (job) to execute
 	 * @param array $args Arguments to pass to the action
 	 * @param array $env Settings to merge on $_SERVER
+	 * @param array $workload Full workload
 	 * @return mixed Returned value by adapter's handle() method
 	 */
-	public static function execute($configName, $action, array $args, array $env = array()) {
+	public static function execute($configName, $action, array $args, array $env = array(), array $workload = array()) {
 		$config = static::getConfig($configName);
 		$filters = $config['filters'];
-		$params = compact('action', 'args', 'env');
+		$params = compact('action', 'args', 'env', 'workload');
 		return static::_filter(__FUNCTION__, $params,
 			function($self, $params) use($configName) {
 				return $self::adapter($configName)->execute(
 					$params['action'],
 					$params['args'],
-					$params['env']
+					$params['env'],
+					$params['workload']
 				);
 			}
 		, $filters);
