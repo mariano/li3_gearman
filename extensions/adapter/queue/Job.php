@@ -341,7 +341,7 @@ class Job extends \lithium\core\Object {
 	 * @return mixed Either an array, or configuration value
 	 */
 	public function config($key = null) {
-		return isset($key) ? $this->_config[$key] : $this->config;
+		return isset($key) ? $this->_config[$key] : $this->_config;
 	}
 }
 
