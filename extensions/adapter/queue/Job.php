@@ -160,7 +160,7 @@ class Job extends \lithium\core\Object {
 
 		if ($options['background']) {
 			try {
-				$this->setStatus($id, static::STATUS_PENDING);
+				$this->setStatus($id, static::STATUS_PENDING, true);
 			} catch(\Exception $e) { }
 		}
 
@@ -254,10 +254,11 @@ class Job extends \lithium\core\Object {
 	 *
 	 * @param string $id Job ID (part of job payload)
 	 * @param string $status Status
+	 * @param bool $creation If true, this is the initial set
 	 * @return string Status, or null if none
 	 * @filter
 	 */
-	protected function setStatus($id, $status) {
+	protected function setStatus($id, $status, $creation = false) {
 		if (empty($id)) {
 			return;
 		} else if (!in_array($status, array(
@@ -268,7 +269,8 @@ class Job extends \lithium\core\Object {
 			throw new \InvalidArgumentException("Invalid status {$status}");
 		}
 
-		$params = compact('id', 'status');
+		$finished = ($status === static::STATUS_FINISHED);
+		$params = compact('id', 'status', 'creation', 'finished');
 		return $this->_filter(__METHOD__, $params,
 			function($self, $params) {
 				if (empty($self->_config['redis'])) {
@@ -280,7 +282,18 @@ class Job extends \lithium\core\Object {
 					return;
 				}
 
-				$redis->set($self->_config['redis']['prefix'] . $params['id'], $params['status']);
+				$key = $self->_config['redis']['prefix'] . $params['id'];
+
+				$redis->set($key, $params['status']);
+
+				// If setting as FINISHED, mark an expiration
+				if ($params['finished'] && !empty($self->_config['redis']['expires'])) {
+					if (extension_loaded('redis')) {
+						$redis->expire($key, $self->_config['redis']['expires']);
+					} else {
+						$redis->keyExpire($key, $self->_config['redis']['expires']);
+					}
+				}
 			}
 		);
 	}
@@ -312,7 +325,8 @@ class Job extends \lithium\core\Object {
 
 			$this->redis = $client;
 			$this->_config['redis'] += array(
-				'prefix' => 'job.'
+				'prefix' => 'job.',
+				'expires' => 7 * 24 * 60 * 60 // 7 days
 			);
 		}
 
