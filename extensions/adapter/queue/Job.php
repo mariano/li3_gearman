@@ -235,17 +235,14 @@ class Job extends \lithium\core\Object {
 		$params = compact('id');
 		return $this->_filter(__METHOD__, $params,
 			function($self, $params) {
-				$config = $self->config();
-				if (empty($config['redis'])) {
+				$config = $self->config('redis');
+				if (empty($config['enabled'])) {
 					return null;
 				}
 
 				$redis = $self->getRedis();
-				if (!$redis) {
-					return;
-				}
-
-				return $redis->get($config['redis']['prefix'] . $params['id']);
+				$key = (!empty($config['prefix']) ? $config['prefix'] : '') . $params['id'];
+				return $redis->get($key);
 			}
 		);
 	}
@@ -274,26 +271,21 @@ class Job extends \lithium\core\Object {
 		$params = compact('id', 'status', 'creation', 'finished');
 		return $this->_filter(__METHOD__, $params,
 			function($self, $params) {
-				$config = $self->config();
-				if (empty($config['redis'])) {
+				$config = $self->config('redis');
+				if (empty($config['enabled'])) {
 					return;
 				}
 
 				$redis = $self->getRedis();
-				if (!$redis) {
-					return;
-				}
-
-				$key = $config['redis']['prefix'] . $params['id'];
-
+				$key = (!empty($config['prefix']) ? $config['prefix'] : '') . $params['id'];
 				$redis->set($key, $params['status']);
 
 				// If setting as FINISHED, mark an expiration
-				if ($params['finished'] && !empty($config['redis']['expires'])) {
+				if ($params['finished'] && !empty($config['expires'])) {
 					if (extension_loaded('redis')) {
-						$redis->expire($key, $config['redis']['expires']);
+						$redis->expire($key, $config['expires']);
 					} else {
-						$redis->keyExpire($key, $config['redis']['expires']);
+						$redis->keyExpire($key, $config['expires']);
 					}
 				}
 			}
@@ -301,11 +293,7 @@ class Job extends \lithium\core\Object {
 	}
 
 	public function getRedis() {
-		$config = $this->_config['redis'] + array('enabled' => false);
-		if (empty($config['enabled'])) {
-			return null;
-		}
-
+		$config = $this->config('redis');
 		if (!isset($this->redis)) {
 			$config += array(
 				'host' => '127.0.0.1',
@@ -326,10 +314,6 @@ class Job extends \lithium\core\Object {
 			}
 
 			$this->redis = $client;
-			$this->_config['redis'] += array(
-				'prefix' => 'job.',
-				'expires' => 7 * 24 * 60 * 60 // 7 days
-			);
 		}
 
 		return $this->redis;
@@ -341,6 +325,18 @@ class Job extends \lithium\core\Object {
 	 * @return mixed Either an array, or configuration value
 	 */
 	public function config($key = null) {
+		if ($key === 'redis') {
+			if (empty($this->_config['redis'])) {
+				$this->_config['redis'] = array();
+			}
+
+			$this->_config['redis'] += array(
+				'enabled' => false,
+				'prefix' => 'job.',
+				'expires' => 7 * 24 * 60 * 60 // 7 days
+			);
+		}
+
 		return isset($key) ? $this->_config[$key] : $this->_config;
 	}
 }
