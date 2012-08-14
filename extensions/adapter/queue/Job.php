@@ -158,11 +158,9 @@ class Job extends \lithium\core\Object {
 			$options['unique'] = md5($workload);
 		}
 
-		if ($options['background']) {
-			try {
-				$this->setStatus($id, static::STATUS_PENDING, true);
-			} catch(\Exception $e) { }
-		}
+		try {
+			$this->setStatus($id, static::STATUS_PENDING, true);
+		} catch(\Exception $e) { }
 
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
@@ -188,14 +186,12 @@ class Job extends \lithium\core\Object {
 
 		$workload += array('id' => null, 'background' => false);
 
-		if ($workload['background']) {
-			try {
-				$status = $this->getStatus($workload['id']);
-			} catch(\Exception $e) { }
+		try {
+			$status = $this->getStatus($workload['id']);
+		} catch(\Exception $e) { }
 
-			if (!empty($status) && $status != static::STATUS_PENDING) {
-				throw new \Exception("Job #{$workload['id']} not on pending status. Status: {$status}");
-			}
+		if (!empty($status) && $status != static::STATUS_PENDING) {
+			throw new \Exception("Job #{$workload['id']} not on pending status. Status: {$status}");
 		}
 
 		if (array_key_exists('environment', $env)) {
@@ -333,7 +329,7 @@ class Job extends \lithium\core\Object {
 			$this->_config['redis'] += array(
 				'enabled' => false,
 				'prefix' => 'job.',
-				'expires' => 7 * 24 * 60 * 60 // 7 days
+				'expires' => 1 * 24 * 60 * 60 // 1 day
 			);
 		}
 
