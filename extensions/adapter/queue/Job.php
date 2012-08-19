@@ -206,9 +206,20 @@ class Job extends \lithium\core\Object {
 		$result = null;
 		try {
 			$this->setStatus($workload['id'], static::STATUS_RUNNING);
+
+			if (isset($this->_config['beforeExecute']) && is_callable($this->_config['beforeExecute'])) {
+				call_user_func_array($this->_config['beforeExecute'], array($task, $args));
+			}
+
 			$result = call_user_func_array($task, $args);
+
+			if (isset($this->_config['afterExecute']) && is_callable($this->_config['afterExecute'])) {
+				call_user_func_array($this->_config['afterExecute'], array($task, $args));
+			}
+
 			$this->setStatus($workload['id'], static::STATUS_FINISHED);
 		} catch(\Exception $e) {
+			error_log($e->getMessage());
 			$this->setStatus($workload['id'], static::STATUS_ERROR);
 			throw $e;
 		}
@@ -329,6 +340,8 @@ class Job extends \lithium\core\Object {
 			$this->_config['redis'] += array(
 				'enabled' => false,
 				'prefix' => 'job.',
+				'beforeExecute' => null,
+				'afterExecute' => null,
 				'expires' => 1 * 24 * 60 * 60 // 1 day
 			);
 		}
