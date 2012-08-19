@@ -1,0 +1,14 @@
+{
+  "name": "mariano/li3_gearman",
+  "type": "lithium-library",
+  "description": "Lithium integration with Gearman.",
+  "homepage": "https://github.com/mariano/li3_gearman",
+  "authors": [{
+    "name": "Mariano Iglesias",
+    "email": "mgiglesias@gmail.com"
+  }],
+
+  "require": {
+    "composer/installers": "dev-master"
+	}
+}
