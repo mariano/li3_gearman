@@ -213,14 +213,21 @@ class Job extends \lithium\core\Object {
 
 			$result = call_user_func_array($task, $args);
 
+			$this->setStatus($workload['id'], static::STATUS_FINISHED);
+
 			if (isset($this->_config['afterExecute']) && is_callable($this->_config['afterExecute'])) {
 				call_user_func_array($this->_config['afterExecute'], array($task, $args));
 			}
 
-			$this->setStatus($workload['id'], static::STATUS_FINISHED);
 		} catch(\Exception $e) {
 			error_log($e->getMessage());
+
 			$this->setStatus($workload['id'], static::STATUS_ERROR);
+
+			if (isset($this->_config['afterExecute']) && is_callable($this->_config['afterExecute'])) {
+				call_user_func_array($this->_config['afterExecute'], array($task, $args));
+			}
+
 			throw $e;
 		}
 
