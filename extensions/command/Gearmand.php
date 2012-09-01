@@ -154,6 +154,40 @@ class Gearmand extends \lithium\console\Command {
 	}
 
 	/**
+	 * Setup.
+	 *
+	 * @param string $config Gearman configuration name
+	 */
+	protected function setup($config = 'default') {
+		$this->_settings = Gearman::config($config);
+		if (!isset($this->_settings)) {
+			throw new ConfigException("{$config} is not a valid li3_gearman configuration");
+		} elseif (empty($this->_settings['servers'])) {
+			throw new ConfigException("{$config} defines no servers");
+		}
+
+		if (isset($this->environment)) {
+			Environment::set($this->environment);
+		} else {
+			$this->environment = Environment::get();
+			if (!$this->environment) {
+				throw new ConfigException("Could not determine environment");
+			}
+		}
+	}
+
+	/**
+	 * Start an individual worker
+	 *
+	 * @param string $config Gearman configuration name
+	 */
+	public function work($config = 'default') {
+		$this->setup($config);
+		$this->_process['run'] = true;
+		$this->worker();
+	}
+
+	/**
 	 * Test that at least a worker is working
 	 */
 	public function ping($config = 'default') {
@@ -180,22 +214,7 @@ class Gearmand extends \lithium\console\Command {
 	 * @param string $config Gearman configuration name
 	 */
 	public function start($config = 'default') {
-		$this->_settings = Gearman::config($config);
-		if (!isset($this->_settings)) {
-			throw new ConfigException("{$config} is not a valid li3_gearman configuration");
-		} elseif (empty($this->_settings['servers'])) {
-			throw new ConfigException("{$config} defines no servers");
-		}
-
-		if (isset($this->environment)) {
-			Environment::set($this->environment);
-		} else {
-			$this->environment = Environment::get();
-			if (!$this->environment) {
-				throw new ConfigException("Could not determine environment");
-			}
-		}
-
+		$this->setup($config);
 		$this->init();
 
 		foreach (array('posix_kill', 'pcntl_fork') as $function) {
