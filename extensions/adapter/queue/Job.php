@@ -300,7 +300,7 @@ class Job extends \lithium\core\Object {
 				}
 
 				// If setting as FINISHED, mark an expiration
-				if ($params['finished'] && !empty($config['expires'])) {
+				if ($params['isFinished'] && !empty($config['expires'])) {
 					if (extension_loaded('redis')) {
 						$redis->expire($key, $config['expires']);
 					} else {
