@@ -159,7 +159,7 @@ class Job extends \lithium\core\Object {
 		}
 
 		try {
-			$this->setStatus($id, static::STATUS_PENDING, true);
+			$this->setStatus($id, static::STATUS_PENDING, $workload);
 		} catch(\Exception $e) { }
 
 		return $this->client->{$action}(
@@ -256,7 +256,7 @@ class Job extends \lithium\core\Object {
 
 				$redis = $self->getRedis();
 				$key = (!empty($config['prefix']) ? $config['prefix'] : '') . $params['id'];
-				return $redis->get($key);
+				return $redis->get($key . '.status');
 			}
 		);
 	}
@@ -266,23 +266,25 @@ class Job extends \lithium\core\Object {
 	 *
 	 * @param string $id Job ID (part of job payload)
 	 * @param string $status Status
-	 * @param bool $creation If true, this is the initial set
+	 * @param array $workload If specified, treat this as creation and save this workload
 	 * @return string Status, or null if none
 	 * @filter
 	 */
-	protected function setStatus($id, $status, $creation = false) {
+	protected function setStatus($id, $status, $workload = array()) {
 		if (empty($id)) {
 			return;
 		} else if (!in_array($status, array(
+			static::STATUS_ERROR,
+			static::STATUS_FINISHED,
 			static::STATUS_PENDING,
-			static::STATUS_RUNNING,
-			static::STATUS_FINISHED
+			static::STATUS_RUNNING
 		))) {
 			throw new \InvalidArgumentException("Invalid status {$status}");
 		}
 
-		$finished = ($status === static::STATUS_FINISHED);
-		$params = compact('id', 'status', 'creation', 'finished');
+		$isFinished = ($status === static::STATUS_FINISHED);
+		$isError = ($status === static::STATUS_ERROR);
+		$params = compact('id', 'isError', 'isFinished', 'status', 'workload');
 		return $this->_filter(__METHOD__, $params,
 			function($self, $params) {
 				$config = $self->config('redis');
@@ -292,7 +294,10 @@ class Job extends \lithium\core\Object {
 
 				$redis = $self->getRedis();
 				$key = (!empty($config['prefix']) ? $config['prefix'] : '') . $params['id'];
-				$redis->set($key, $params['status']);
+				$redis->set($key . '.status', $params['status']);
+				if (!empty($params['workload'])) {
+					$redis->set($key . '.workload', $params['workload']);
+				}
 
 				// If setting as FINISHED, mark an expiration
 				if ($params['finished'] && !empty($config['expires'])) {
@@ -301,6 +306,8 @@ class Job extends \lithium\core\Object {
 					} else {
 						$redis->keyExpire($key, $config['expires']);
 					}
+				} else if ($params['isError']) {
+					$redis->set($config['prefix'] . '.errors.' . $params['id']);
 				}
 			}
 		);
