@@ -307,7 +307,7 @@ class Job extends \lithium\core\Object {
 						$redis->keyExpire($key, $config['expires']);
 					}
 				} else if ($params['isError']) {
-					$redis->set($config['prefix'] . '.errors.' . $params['id']);
+					$redis->set($config['prefix'] . '.errors.' . $params['id'], $params['id']);
 				}
 			}
 		);
