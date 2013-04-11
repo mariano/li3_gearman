@@ -49,7 +49,29 @@ your lithium application, add the following code to
 Once you have a valid configuration, you can start the daemon, and start
 triggering jobs.
 
-## Running the daemon ##
+## Using supervisor to run the daemon ##
+
+The recommended way to run li3\_gearman daemon is to use [supervisor] [supervisor], 
+or a similar tool. As an example, here's a supervisor configuration that runs 8 
+workers (assuming the application lives at `/var/www`)
+
+```text
+[program:worker]
+user=ubuntu
+command=/usr/bin/php -f /var/www/libraries/lithium/console/lithium.php -- --app=/var/www gearmand work --blocking --verbose
+process_name=%(program_name)s #%(process_num)s
+numprocs=8
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/supervisor/worker-%(process_num)s.log
+stdout_logfile_maxbytes=50MB
+stdout_logfile_backups=10
+stderr_logfile=/var/log/supervisor/worker-%(process_num)s-error.log
+stderr_logfile_maxbytes=50MB
+stderr_logfile_backups=10
+```
+
+## Manually running the daemon ##
 
 The daemon is a lithium console command called `gearmand`. Running it without
 arguments will show a message similar to this:
@@ -388,6 +410,58 @@ I am app\tasks\Hello::run
 I am app\tasks\Hello::say
 ```
 
+# Scheduled / Delayed Gearman jobs #
+
+Gearman does not offer support for out-of-the-box delayed scheduling of jobs.
+Every job you send to Gearman is considered to be available for immediate
+execution. The common consensus is that delayed tasks are application-specific
+logic, so li3\_gearmand offers them.
+
+To do so, Redis is used as the backend to hold scheduled jobs. When you
+configure the `Gearman` instance (see Usage section above), make sure you
+specify how to reach your Redis server, like so:
+
+```php
+\li3_gearman\Gearman::config(array(
+    'default' => array(
+        'servers' => '127.0.0.1',
+		'redis' => array(
+			'host' => '127.0.0.1',
+			'port' => 6379
+		)
+    )
+));
+```
+
+If you now open a shell and issue:
+
+```bash
+$ li3 gearmand scheduler --verbose
+```
+
+You will see a process waiting for scheduled tasks. From your application code
+you can now set the `schedule` option parameter to be any DateTime (UTC) on
+which you want a Gearman task to be executed. Following our example above, say
+we want to run the Hello task one hour from now:
+
+$result = Gearman::run('default', 'app\tasks\Hello', array(), array(
+	'schedule' => new \DateTime('now +1 hour', new \DateTimeZone('UTC'))
+));
+
+Approximately one hour later, the scheduler process would output something 
+like the following:
+
+```bash
+$ li3 gearmand scheduler --verbose
+Waiting for scheduled tasks
+Job #1cb52faa344dc68bb178a15aff388cee04d9bf51 moved for immediate execution
+```
+
+And you will see this job being executed in the main Gearmand work console.
+
+Once you are ready to deploy the scheduler process, ensure you do so with
+[supervisor] [supervisor], or any other tool that keeps the process alive.
+
 [lithium]: http://lithify.me
 [gearman]: http://gearman.org
 [license]: http://www.opensource.org/licenses/bsd-license.php
@@ -395,3 +469,4 @@ I am app\tasks\Hello::say
 [php-bug-60764]: https://bugs.php.net/bug.php?id=60764
 [linux-initscripts]: https://www.linux.com/learn/tutorials/442412-managing-linux-daemons-with-init-scripts
 [monit]: http://mmonit.com/monit
+[supervisor]: http://supervisord.org

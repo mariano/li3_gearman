@@ -135,48 +135,6 @@ class Gearmand extends \lithium\console\Command {
 	protected $_settings;
 
 	/**
-	 * Initialization and sanity checks
-	 */
-	protected function init() {
-		declare(ticks = 30);
-
-		$this->atomic = !empty($this->atomic);
-		if ($this->atomic) {
-			$this->resuscitate = true;
-			$this->limit = 0;
-		}
-
-		foreach (array('posix_kill', 'pcntl_fork') as $function) {
-			if (!function_exists($function)) {
-				throw new ConfigException("Can't find function {$function}");
-			}
-		}
-	}
-
-	/**
-	 * Setup.
-	 *
-	 * @param string $config Gearman configuration name
-	 */
-	protected function setup($config = 'default') {
-		$this->_settings = Gearman::config($config);
-		if (!isset($this->_settings)) {
-			throw new ConfigException("{$config} is not a valid li3_gearman configuration");
-		} elseif (empty($this->_settings['servers'])) {
-			throw new ConfigException("{$config} defines no servers");
-		}
-
-		if (isset($this->environment)) {
-			Environment::set($this->environment);
-		} else {
-			$this->environment = Environment::get();
-			if (!$this->environment) {
-				throw new ConfigException("Could not determine environment");
-			}
-		}
-	}
-
-	/**
 	 * Start an individual worker
 	 *
 	 * @param string $config Gearman configuration name
@@ -276,6 +234,71 @@ class Gearmand extends \lithium\console\Command {
 		$this->log('Sending daemon the restart signal');
 		$this->sendSignalToDaemon(SIGHUP);
 	}
+
+	/**
+	 * Run the scheduler that allows for delayed/scheduled gearman tasks
+	 *
+	 * @param int $every How many seconds to wait between checks
+	 * @param string $config Gearman configuration name
+	 */
+	public function scheduler($every = 60, $config = 'default') {
+		if ($every <= 0) {
+			$this->error('Invalid number of seconds');
+			$this->_stop(1);
+		}
+
+		$this->log('Waiting for scheduled tasks');
+		while(true) {
+			$jobId = Gearman::scheduled($config);
+			if (!empty($jobId)) {
+				$this->log('Job #' . $jobId . ' moved for immediate execution');
+			}
+			sleep($every);
+		}
+	}
+
+	/**
+	 * Initialization and sanity checks
+	 */
+	protected function init() {
+		declare(ticks = 30);
+
+		$this->atomic = !empty($this->atomic);
+		if ($this->atomic) {
+			$this->resuscitate = true;
+			$this->limit = 0;
+		}
+
+		foreach (array('posix_kill', 'pcntl_fork') as $function) {
+			if (!function_exists($function)) {
+				throw new ConfigException("Can't find function {$function}");
+			}
+		}
+	}
+
+	/**
+	 * Setup.
+	 *
+	 * @param string $config Gearman configuration name
+	 */
+	protected function setup($config = 'default') {
+		$this->_settings = Gearman::config($config);
+		if (!isset($this->_settings)) {
+			throw new ConfigException("{$config} is not a valid li3_gearman configuration");
+		} elseif (empty($this->_settings['servers'])) {
+			throw new ConfigException("{$config} defines no servers");
+		}
+
+		if (isset($this->environment)) {
+			Environment::set($this->environment);
+		} else {
+			$this->environment = Environment::get();
+			if (!$this->environment) {
+				throw new ConfigException("Could not determine environment");
+			}
+		}
+	}
+
 
 	/**
 	 * Daemon work loop. Starts the workers, and runs as long as told to.
@@ -625,4 +648,3 @@ class Gearmand extends \lithium\console\Command {
 		return parent::stop($status);
 	}
 }
-?>

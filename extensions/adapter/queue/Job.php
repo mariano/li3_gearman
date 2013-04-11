@@ -9,6 +9,9 @@
 
 namespace li3_gearman\extensions\adapter\queue;
 
+use DateTime;
+use DateTimeZone;
+use InvalidArgumentException;
 use RuntimeException;
 use lithium\core\ConfigException;
 use lithium\core\Environment;
@@ -79,6 +82,7 @@ class Job extends \lithium\core\Object {
 	 * @param string $task Fully qualified class name, with optional method name
 	 * @param array $args Arguments to pass to the task
 	 * @param array $options Options:
+	 *                      - DateTime schedule: If specified, run at this time
 	 *                      - boolean background: wether to run task in
 	 *                      background
 	 *                      - string id: Identifier for this task (auto generates
@@ -95,12 +99,13 @@ class Job extends \lithium\core\Object {
 	 * @return mixed If background, job handle. Otherwise job's return value
 	 */
 	public function run($task, array $args, array $options) {
-		$options = $options + array(
+		$options += array(
 			'configName' => null,
 			'background' => true,
 			'unique' => false,
 			'id' => null,
 			'priority' => 'normal',
+			'schedule' => null,
 			'env' => array_intersect_key($_SERVER, array(
 				'HTTP_HOST' => null,
 				'SCRIPT_FILENAME' => null,
@@ -111,11 +116,22 @@ class Job extends \lithium\core\Object {
 		);
 
 		if (empty($options['configName'])) {
-			throw new ConfigException('Missing configuration name');
-		}
+			throw new InvalidArgumentException('Missing configuration name');
+		} else if (!in_array($options['priority'], array('low', 'normal', 'high'))) {
+			throw new InvalidArgumentException("Invalid priority {$options['priority']}");
+		} else if (isset($options['schedule'])) {
+			if (!($options['schedule'] instanceof DateTime)) {
+				throw new InvalidArgumentException('Invalid value specified for schedule option');
+			} else if (!$options['background']) {
+				throw new InvalidArgumentException('Only background tasks can be scheduled');
+			} else if ($options['schedule']->getTimezone()->getName() !== 'UTC') {
+				throw new InvalidArgumentException('Schedule time should be specified in UTC');
+			}
 
-		if (!in_array($options['priority'], array('low', 'normal', 'high'))) {
-			throw new ConfigException("Invalid priority {$options['priority']}");
+			$now = new DateTime('now', new \DateTimeZone('UTC'));
+			if ($now >= $options['schedule']) {
+				$options['schedule'] = null;
+			}
 		}
 
 		if ($task[0] !== '\\') {
@@ -140,20 +156,110 @@ class Job extends \lithium\core\Object {
 			break;
 		}
 		if (empty($action)) {
-			throw new Exception('Could not map to a gearman action');
+			throw new InvalidArgumentException('Could not map priority to a gearman action');
 		}
 
 		$id = !empty($params['id']) ? $params['id'] : sha1(uniqid(time(), true));
 		$env = $options['env'];
 		$env['environment'] = Environment::get();
-		$workload = json_encode(array(
+		$workload = array(
 			'id' => $id,
 			'args' => $args,
 			'env' => $env,
 			'configName' => $options['configName'],
 			'task' => $task,
 			'background' => $options['background']
-		));
+		);
+
+		if ($options['schedule']) {
+			return $this->schedule($options['schedule'], $id, $action, $workload, $options);
+		}
+		return $this->queue($id, $action, $workload, $options);
+	}
+
+	/**
+	 * Process a scheduled task
+	 *
+	 * @return string Job ID
+	 * @filter
+	 */
+	public function scheduled() {
+		$config = $this->config('redis');
+		if (empty($config['enabled'])) {
+			throw new ConfigException('Can\'t process scheduled tasks without Redis support');
+		}
+
+		$now = new DateTime('now', new DateTimeZone('UTC'));
+		$params = compact('now');
+		return $this->_filter(__METHOD__, $params,
+			function($self, $params) {
+				$config = $self->config('redis');
+				$redis = $self->getRedis();
+				$key = (!empty($config['schedulePrefix']) ? $config['schedulePrefix'] : 'job_scheduled');
+				$redis->watch($key);
+
+				$tasks = $redis->zRangeByScore($key, 0, $params['now']->getTimestamp(), array('limit' => array(0, 1)));
+				if (!empty($tasks)) {
+					foreach($tasks as $json) {
+						$redis->multi()->zrem($key, $json);
+						$result = $redis->exec();
+
+						$task = json_decode($json, true);
+						if (!empty($task) && is_array($task) && $result !== false) {
+							$self->queue($task['id'], $task['action'], $task['workload'], $task['options']);
+							return $task['id'];
+						}
+					}
+				}
+
+				$redis->unwatch();
+			}
+		);
+	}
+
+	/**
+	 * Schedule a Gearman task for later execution
+	 *
+	 * @param DateTime $when When to execute
+	 * @param string $id Job ID
+	 * @param string $action Gearman client method to use
+	 * @param array $workload Gearman workload
+	 * @param array $options Additional options for Gearman
+	 * @throws ConfigException
+	 * @filter
+	 */
+	protected function schedule(DateTime $when, $id, $action, array $workload, array $options) {
+		$config = $this->config('redis');
+		if (empty($config['enabled'])) {
+			throw new ConfigException('Can\'t schedule tasks without Redis support');
+		}
+
+		$params = array(
+			'when' => $when,
+			'id' => $id,
+			'json' => json_encode(compact('id', 'action', 'workload', 'options'))
+		);
+		return $this->_filter(__METHOD__, $params,
+			function($self, $params) {
+				$config = $self->config('redis');
+				$redis = $self->getRedis();
+				$key = (!empty($config['schedulePrefix']) ? $config['schedulePrefix'] : 'job_scheduled');
+				$redis->zadd($key, $params['when']->getTimestamp(), $params['json']);
+			}
+		);
+	}
+
+	/**
+	 * Queues a Gearman task for execution
+	 *
+	 * @param string $id Job ID
+	 * @param string $action Gearman client method to use
+	 * @param array $workload Gearman workload
+	 * @param array $options Additional options for Gearman
+	 * @throws ConfigException
+	 */
+	protected function queue($id, $action, array $workload, array $options) {
+		$workload = json_encode($workload);
 		if ($options['unique'] && !is_string($options['unique'])) {
 			$options['unique'] = md5($workload);
 		}
@@ -313,10 +419,14 @@ class Job extends \lithium\core\Object {
 		);
 	}
 
+	/**
+	 * Get instance to Redis client
+	 *
+	 * @return object Redis client
+	 */
 	public function getRedis() {
-		$config = $this->config('redis');
 		if (!isset($this->redis)) {
-			$config += array(
+			$config = $this->config('redis') + array(
 				'host' => '127.0.0.1',
 				'port' => 6379
 			);
@@ -354,6 +464,7 @@ class Job extends \lithium\core\Object {
 			$this->_config['redis'] += array(
 				'enabled' => false,
 				'prefix' => 'job.',
+				'schedulePrefix' => 'job_scheduled',
 				'beforeExecute' => null,
 				'afterExecute' => null,
 				'expires' => 1 * 24 * 60 * 60 // 1 day
@@ -363,5 +474,3 @@ class Job extends \lithium\core\Object {
 		return isset($key) ? $this->_config[$key] : $this->_config;
 	}
 }
-
-?>

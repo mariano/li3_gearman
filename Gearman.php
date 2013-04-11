@@ -58,7 +58,7 @@ class Gearman extends \lithium\core\Adaptable {
 	 * @param array $args Arguments to pass to the action
 	 * @param array $env Settings to merge on $_SERVER
 	 * @param array $workload Full workload
-	 * @return mixed Returned value by adapter's handle() method
+	 * @return mixed Returned value by adapter's execute() method
 	 */
 	public static function execute($configName, $action, array $args, array $env = array(), array $workload = array()) {
 		$config = static::getConfig($configName);
@@ -72,6 +72,22 @@ class Gearman extends \lithium\core\Adaptable {
 					$params['env'],
 					$params['workload']
 				);
+			}
+		, $filters);
+	}
+
+	/**
+	 * Processes a scheduled job
+	 *
+	 * @param string $configName Configuration to use
+	 * @return mixed Returned value by adapter's scheduled() method
+	 */
+	public static function scheduled($configName) {
+		$config = static::getConfig($configName);
+		$filters = $config['filters'];
+		return static::_filter(__FUNCTION__, array(),
+			function($self, $params) use($configName) {
+				return $self::adapter($configName)->scheduled();
 			}
 		, $filters);
 	}
@@ -129,4 +145,3 @@ class Gearman extends \lithium\core\Adaptable {
 		return 'OK';
 	}
 }
-?>
