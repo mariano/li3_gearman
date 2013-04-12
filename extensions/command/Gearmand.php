@@ -241,7 +241,7 @@ class Gearmand extends \lithium\console\Command {
 	 * @param int $every How many seconds to wait between checks
 	 * @param string $config Gearman configuration name
 	 */
-	public function scheduler($every = 60, $config = 'default') {
+	public function scheduler($every = 30, $config = 'default') {
 		if ($every <= 0) {
 			$this->error('Invalid number of seconds');
 			$this->_stop(1);
@@ -252,8 +252,9 @@ class Gearmand extends \lithium\console\Command {
 			$jobId = Gearman::scheduled($config);
 			if (!empty($jobId)) {
 				$this->log('Job #' . $jobId . ' moved for immediate execution');
+			} else {
+				sleep($every);
 			}
-			sleep($every);
 		}
 	}
 
