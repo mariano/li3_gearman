@@ -11,6 +11,7 @@ namespace li3_gearman\extensions\adapter\queue;
 
 use DateTime;
 use DateTimeZone;
+use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 use lithium\core\ConfigException;
@@ -128,7 +129,7 @@ class Job extends \lithium\core\Object {
 				throw new InvalidArgumentException('Schedule time should be specified in UTC');
 			}
 
-			$now = new DateTime('now', new \DateTimeZone('UTC'));
+			$now = new DateTime('now', new DateTimeZone('UTC'));
 			if ($now >= $options['schedule']) {
 				$options['schedule'] = null;
 			}
@@ -266,7 +267,7 @@ class Job extends \lithium\core\Object {
 
 		try {
 			$this->setStatus($id, static::STATUS_PENDING, $workload);
-		} catch(\Exception $e) { }
+		} catch(Exception $e) { }
 
 		return $this->client->{$action}(
 			static::$_classes['worker'] . '::run',
@@ -294,10 +295,10 @@ class Job extends \lithium\core\Object {
 
 		try {
 			$status = $this->getStatus($workload['id']);
-		} catch(\Exception $e) { }
+		} catch(Exception $e) { }
 
 		if (!empty($status) && $status != static::STATUS_PENDING) {
-			throw new \Exception("Job #{$workload['id']} not on pending status. Status: {$status}");
+			throw new Exception("Job #{$workload['id']} not on pending status. Status: {$status}");
 		}
 
 		if (array_key_exists('environment', $env)) {
@@ -325,13 +326,17 @@ class Job extends \lithium\core\Object {
 				call_user_func_array($this->_config['afterExecute'], array($task, $args));
 			}
 
-		} catch(\Exception $e) {
+		} catch(Exception $e) {
 			error_log($e->getMessage());
 
 			$this->setStatus($workload['id'], static::STATUS_ERROR);
 
 			if (isset($this->_config['afterExecute']) && is_callable($this->_config['afterExecute'])) {
 				call_user_func_array($this->_config['afterExecute'], array($task, $args));
+			}
+
+			if (isset($this->_config['onException']) && is_callable($this->_config['onException'])) {
+				call_user_func_array($this->_config['onException'], array($task, $args, $e));
 			}
 
 			throw $e;
@@ -385,7 +390,7 @@ class Job extends \lithium\core\Object {
 			static::STATUS_PENDING,
 			static::STATUS_RUNNING
 		))) {
-			throw new \InvalidArgumentException("Invalid status {$status}");
+			throw new InvalidArgumentException("Invalid status {$status}");
 		}
 
 		$isFinished = ($status === static::STATUS_FINISHED);
@@ -434,7 +439,7 @@ class Job extends \lithium\core\Object {
 			if (extension_loaded('redis')) {
 				$client = new \Redis();
 				if (!$client->connect($config['host'], $config['port'])) {
-					throw new \Exception("Could not connect to REDIS at {$config['host']}:{$config['port']}");
+					throw new Exception("Could not connect to REDIS at {$config['host']}:{$config['port']}");
 				}
 			} else if (class_exists('\Predis\Client')) {
 				$client = new \Predis\Client($config);
@@ -467,6 +472,7 @@ class Job extends \lithium\core\Object {
 				'schedulePrefix' => 'job_scheduled',
 				'beforeExecute' => null,
 				'afterExecute' => null,
+				'onException' => null,
 				'expires' => 1 * 24 * 60 * 60 // 1 day
 			);
 		}
