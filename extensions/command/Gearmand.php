@@ -612,6 +612,7 @@ class Gearmand extends \lithium\console\Command {
 		if ($this->syslog) {
 			syslog($level, $message);
 		} else {
+			$message = '[' . date('r') . '] ' . $message;
 			$this->out($message);
 		}
 	}
