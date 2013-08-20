@@ -327,7 +327,7 @@ class Job extends \lithium\core\Object {
 			}
 
 		} catch(Exception $e) {
-			error_log($e->getMessage());
+			error_log('[' . date('r') . '] ' . $e->getMessage());
 
 			$this->setStatus($workload['id'], static::STATUS_ERROR);
 
