@@ -141,7 +141,11 @@ class Gearman extends \lithium\core\Adaptable {
 	/**
 	 * Executed through the Gearmand shell for testing that a worker is alive
 	 */
-	public static function ping() {
+	public static function ping($scheduled = false) {
+		if ($scheduled) {
+			echo "[Scheduled PING] OK\n";
+			return;
+		}
 		return 'OK';
 	}
 }

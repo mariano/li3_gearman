@@ -8,6 +8,10 @@
 
 namespace li3_gearman\extensions\command;
 
+use DateInterval;
+use DateTime;
+use DateTimeZone;
+use Exception;
 use RuntimeException;
 use GearmanException;
 use GearmanJob;
@@ -148,18 +152,33 @@ class Gearmand extends \lithium\console\Command {
 	/**
 	 * Test that at least a worker is working
 	 */
-	public function ping($config = 'default') {
-		if ($this->verbose) {
-			$this->out('Pinging... ', false);
+	public function ping($config = 'default', $delay = null) {
+		$schedule = null;
+		if (isset($delay)) {
+			$schedule = new DateTime(null, new DateTimeZone('UTC'));
+			$schedule->add(new DateInterval("PT{$delay}S"));
 		}
+		if ($this->verbose) {
+			if (isset($schedule)) {
+				$this->out('Pinging in ' . $delay . ' seconds (' . $schedule->format('Y-m-d H:i:s') . ' UTC)... ', false);
+			} else {
+				$this->out('Pinging... ', false);
+			}
+		}
+
 		$job = Gearman::adapter($config);
 		$job->getClient()->setTimeout(5000);
-		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', array(), array(
+		$result = @Gearman::run($config, 'li3_gearman\Gearman::ping', isset($schedule) ? array(true) : array(), array(
 			'priority' => Job::PRIORITY_HIGH,
-			'background' => false
+			'background' => isset($schedule),
+			'schedule' => isset($schedule) ? $schedule : null
 		));
-		if ($result) {
-			$this->out($result);
+		if ($result || isset($schedule)) {
+			if (isset($schedule)) {
+				$this->out('Scheduled');
+			} else {
+				$this->out($result);
+			}
 			return;
 		}
 		$this->error('ERROR');
@@ -371,7 +390,7 @@ class Gearmand extends \lithium\console\Command {
 				!empty($params['env']) ? $params['env'] : array(),
 				$params
 			);
-		} catch(\Exception $e) {
+		} catch(Exception $e) {
 			$this->log('ERROR: ' . $e->getMessage(), LOG_ERR);
 		}
 
