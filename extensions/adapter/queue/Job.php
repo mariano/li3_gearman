@@ -160,7 +160,7 @@ class Job extends \lithium\core\Object {
 			throw new InvalidArgumentException('Could not map priority to a gearman action');
 		}
 
-		$id = !empty($params['id']) ? $params['id'] : sha1(uniqid(time(), true));
+		$id = !empty($options['id']) ? $options['id'] : sha1(uniqid(time(), true));
 		$env = $options['env'];
 		$env['environment'] = Environment::get();
 		$workload = array(
