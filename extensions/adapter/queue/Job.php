@@ -461,7 +461,7 @@ class Job extends Object
             $params,
             function ($self, $params) {
                 $config = $self->config('redis');
-                if (empty($config['enabled'])) {
+                if (empty($config['enabled']) || empty($config['saveJobStatus'])) {
                     return;
                 }
 
@@ -532,6 +532,7 @@ class Job extends Object
 
             $this->_config['redis'] += [
                 'enabled' => false,
+                'saveJobStatus' => false,
                 'prefix' => 'job.',
                 'schedulePrefix' => 'job_scheduled',
                 'beforeExecute' => null,

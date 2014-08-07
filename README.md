@@ -425,10 +425,10 @@ specify how to reach your Redis server, like so:
 \li3_gearman\Gearman::config(array(
     'default' => array(
         'servers' => '127.0.0.1',
-		'redis' => array(
-			'host' => '127.0.0.1',
-			'port' => 6379
-		)
+        'redis' => array(
+            'host' => '127.0.0.1',
+            'port' => 6379
+        )
     )
 ));
 ```
@@ -445,7 +445,7 @@ which you want a Gearman task to be executed. Following our example above, say
 we want to run the Hello task one hour from now:
 
 $result = Gearman::run('default', 'app\tasks\Hello', array(), array(
-	'schedule' => new \DateTime('now +1 hour', new \DateTimeZone('UTC'))
+    'schedule' => new \DateTime('now +1 hour', new \DateTimeZone('UTC'))
 ));
 
 Approximately one hour later, the scheduler process would output something 
