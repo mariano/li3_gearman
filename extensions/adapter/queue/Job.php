@@ -383,7 +383,7 @@ class Job extends Object
                 call_user_func_array($this->_config['onException'], [$task, $args, $e]);
             }
 
-            if (!empty($workload['retries']) && !empty($workload['retries']['maximum']) && $workload['retry'] <= $workload['retries']['maximum']) {
+            if (!empty($workload['retries']) && !empty($workload['retries']['maximum']) && $workload['retry'] < $workload['retries']['maximum']) {
                 $this->run($task, $args, [
                     'schedule' => new DateTime('now +' . $workload['retries']['increment'][$workload['retry']], new DateTimeZone('UTC')),
                     'retry' => $workload['retry'] + 1,
