@@ -124,6 +124,7 @@ class Gearmand extends Command
      */
     protected $process = [
         'run' => false,
+        'working' => false,
         'reload' => false,
         'pid' => null,
         'daemonPid' => null,
@@ -327,6 +328,12 @@ class Gearmand extends Command
                 throw new ConfigException("Could not determine environment");
             }
         }
+
+        foreach ([SIGTERM, SIGHUP] as $signal) {
+            if (!pcntl_signal($signal, [$this, 'signal'])) {
+                throw new RuntimeException("Could not register signal {$signal}");
+            }
+        }
     }
 
 
@@ -339,12 +346,6 @@ class Gearmand extends Command
         $this->process['isDaemon'] = true;
         $this->process['daemonPid'] = posix_getpid();
         $this->process['pid'] = $this->process['daemonPid'];
-
-        foreach ([SIGTERM, SIGHUP] as $signal) {
-            if (!pcntl_signal($signal, [$this, 'signal'])) {
-                throw new RuntimeException("Could not register signal {$signal}");
-            }
-        }
 
         $this->startWorkers();
 
@@ -383,6 +384,8 @@ class Gearmand extends Command
      */
     public function doWork(GearmanJob $job)
     {
+        $this->process['working'] = true;
+
         try {
             $workload = $job->workload();
             if (empty($workload)) {
@@ -405,6 +408,8 @@ class Gearmand extends Command
         } catch (Exception $e) {
             $this->log('ERROR: ' . $e->getMessage(), LOG_ERR);
         }
+
+        $this->process['working'] = false;
 
         return isset($result) ? $result : null;
     }
@@ -603,7 +608,7 @@ class Gearmand extends Command
      */
     public function signal($signal)
     {
-        switch($signal) {
+        switch ($signal) {
             case SIGHUP:
                 $this->process['reload'] = true;
                 break;
