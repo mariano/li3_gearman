@@ -66,6 +66,14 @@ class Gearmand extends Command
     public $limit = 0;
 
     /**
+     * What % of maximum configured memory should be reached before the worker
+     * abandons execution. Set to 0 for no limit. Default: 0
+     *
+     * @var int
+     */
+    public $memlimit = 0;
+
+    /**
      * Location of PID file. Only applicable if daemon mode is enabled.
      * Default: /var/run/li3_gearman.pid
      *
@@ -320,6 +328,13 @@ class Gearmand extends Command
             throw new ConfigException("{$config} defines no servers");
         }
 
+        if (!empty($this->memlimit)) {
+            $units = ['K' => 1024, 'M' => 1024*1024, 'G' => 1024*1024*1024];
+            $memoryLimit = ini_get('memory_limit');
+            $memoryLimit = ((int) substr($memoryLimit, 0, -1)) * $units[$memoryLimit[strlen($memoryLimit) - 1]];
+            $this->settings['memoryLimit'] = (int) floor($memoryLimit * ($this->memlimit / 100));
+        }
+
         if (isset($this->environment)) {
             Environment::set($this->environment);
         } else {
@@ -411,6 +426,15 @@ class Gearmand extends Command
 
         $this->process['working'] = false;
 
+        if (!empty($this->settings['memoryLimit'])) {
+            $usedMemory = memory_get_usage(true);
+            $this->log('Current Memory: ' . ceil($usedMemory / (1024 * 1024)) . ' MB' . '. Max memory set to ' . ceil($this->settings['memoryLimit'] / (1024 * 1024)) . ' MB');
+            if ($usedMemory >= $this->settings['memoryLimit']) {
+                $this->log('Maximum allowed memory reached. Quitting.');
+                $this->process['run'] = false;
+            }
+        }
+
         return isset($result) ? $result : null;
     }
 
@@ -420,6 +444,9 @@ class Gearmand extends Command
     protected function worker()
     {
         $this->log('Starting worker');
+        if (!empty($this->settings['memoryLimit'])) {
+            $this->log('Max memory set to ' . ceil($this->settings['memoryLimit'] / (1024 * 1024)) . ' MB');
+        }
 
         $this->log('Creating Gearman worker');
 
